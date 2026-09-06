@@ -10,6 +10,11 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./sentinelscan.db"
     cors_origins: str = "http://localhost:5173"
 
+    # Scans are time-boxed so a run against a large target stays demo-practical.
+    spider_max_duration_mins: int = 2
+    ascan_max_duration_mins: int = 5
+    reports_dir: str = "reports_output"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
