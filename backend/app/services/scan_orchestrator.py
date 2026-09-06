@@ -140,9 +140,16 @@ def _to_finding(scan_id: int, alert: dict) -> Finding:
         param=alert.get("param"),
         attack=alert.get("attack"),
         evidence=alert.get("evidence"),
-        cwe_id=alert.get("cweid"),
-        wasc_id=alert.get("wascid"),
+        cwe_id=_normalize_id(alert.get("cweid")),
+        wasc_id=_normalize_id(alert.get("wascid")),
     )
+
+
+def _normalize_id(value: str | None) -> str | None:
+    """ZAP uses "-1" and "0" to mean "no CWE/WASC id assigned"."""
+    if value is None:
+        return None
+    return value if value.strip() not in {"", "-1", "0"} else None
 
 
 def _mark_failed(db, scan_id: int, message: str) -> None:

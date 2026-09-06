@@ -47,6 +47,8 @@ export interface Finding {
   evidence: string | null
   cwe_id: string | null
   wasc_id: string | null
+  remediation: string
+  remediation_is_curated: boolean
 }
 
 export interface ZapStatus {

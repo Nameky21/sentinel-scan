@@ -21,3 +21,6 @@ class FindingResponse(BaseModel):
     evidence: str | None
     cwe_id: str | None
     wasc_id: str | None
+    # Resolved from the remediation knowledge base by the router, not stored.
+    remediation: str = ""
+    remediation_is_curated: bool = False

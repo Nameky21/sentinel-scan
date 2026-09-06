@@ -131,7 +131,8 @@ def render_pdf(context: dict, output_path: Path) -> None:
         Paragraph("Findings summary", styles["h2"]),
         _summary_table(context),
         Paragraph(
-            "Counts show distinct issues, with the number of affected locations in brackets.",
+            "One issue can affect many locations: ZAP reports an alert per affected URL, so a single "
+            "misconfiguration may account for dozens of locations.",
             styles["label"],
         ),
     ]

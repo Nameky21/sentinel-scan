@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.db.models import Finding, Risk, Scan
 from app.schemas.finding import FindingResponse
+from app.services.remediation_kb import remediation_for
 from app.services.severity_mapping import RISK_ORDER
 
 router = APIRouter(prefix="/api/scans", tags=["findings"])
@@ -19,5 +20,13 @@ def list_findings(scan_id: int, risk: Risk | None = None, db: Session = Depends(
     if risk is not None:
         query = query.where(Finding.risk == risk)
 
-    findings = db.scalars(query).all()
-    return sorted(findings, key=lambda f: (RISK_ORDER.index(f.risk), f.name))
+    findings = sorted(db.scalars(query).all(), key=lambda f: (RISK_ORDER.index(f.risk), f.name))
+    responses = []
+    for finding in findings:
+        remediation, curated = remediation_for(finding.plugin_id, finding.solution)
+        responses.append(
+            FindingResponse.model_validate(finding).model_copy(
+                update={"remediation": remediation, "remediation_is_curated": curated}
+            )
+        )
+    return responses

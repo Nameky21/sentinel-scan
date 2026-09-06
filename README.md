@@ -12,6 +12,16 @@ SentinelScan performs **active scanning** — it sends real attack traffic and c
 
 **Only scan systems you own or have explicit written authorization to test.** Unauthorized scanning is illegal in most jurisdictions. Development and testing of this project is done exclusively against deliberately-vulnerable practice applications running locally (see [Test targets](#test-targets)).
 
+## Screenshots
+
+Findings from a scan of a local OWASP Juice Shop container, grouped by issue and filterable by severity:
+
+![Findings dashboard](docs/screenshots/findings-dashboard.jpg)
+
+The generated HTML report, with curated remediation guidance:
+
+![HTML report](docs/screenshots/html-report.jpg)
+
 ## Features
 
 - **Real scan engine** — ZAP spider, browser-driven AJAX spider, and active scan, orchestrated as a background job with phase-by-phase progress.

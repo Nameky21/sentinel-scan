@@ -46,7 +46,14 @@ def download_report(scan_id: int, format: ReportFormat, db: Session = Depends(ge
     if not path.exists():
         raise HTTPException(status_code=404, detail="Report file is missing; regenerate it")
 
-    return FileResponse(path, media_type=MEDIA_TYPES[format], filename=path.name)
+    # Inline so the UI's "open report" shows it in the browser; the browser's own
+    # save action still uses the filename.
+    return FileResponse(
+        path,
+        media_type=MEDIA_TYPES[format],
+        filename=path.name,
+        content_disposition_type="inline",
+    )
 
 
 def _to_response(report: Report) -> ReportResponse:

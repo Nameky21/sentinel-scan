@@ -9,7 +9,8 @@ interface Issue {
   risk: Risk
   confidence: string
   description: string | null
-  solution: string | null
+  remediation: string
+  remediation_is_curated: boolean
   cwe_id: string | null
   plugin_id: string | null
   reference: string | null
@@ -115,14 +116,17 @@ export function FindingsTable({ findings }: { findings: Finding[] }) {
                             <p className="text-slate-300">{issue.description}</p>
                           </div>
                         )}
-                        {issue.solution && (
-                          <div>
-                            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                              Remediation
-                            </p>
-                            <p className="text-slate-300">{issue.solution}</p>
-                          </div>
-                        )}
+                        <div>
+                          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Remediation
+                            {issue.remediation_is_curated && (
+                              <span className="ml-2 normal-case tracking-normal text-teal-400">
+                                SentinelScan guidance
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-slate-300">{issue.remediation}</p>
+                        </div>
                         <div>
                           <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
                             Affected locations
