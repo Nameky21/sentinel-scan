@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic-settings
+python-dotenv
+zaproxy
+jinja2
+reportlab
+httpx
+pytest
