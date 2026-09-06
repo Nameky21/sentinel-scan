@@ -12,7 +12,10 @@ class Settings(BaseSettings):
 
     # Scans are time-boxed so a run against a large target stays demo-practical.
     spider_max_duration_mins: int = 2
-    ascan_max_duration_mins: int = 5
+    ajax_spider_max_duration_mins: int = 3
+    ascan_max_duration_mins: int = 10
+    # Single-page apps need a real browser to crawl; ZAP defaults to Firefox.
+    ajax_spider_browser: str = "chrome-headless"
     reports_dir: str = "reports_output"
 
     @property

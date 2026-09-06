@@ -45,6 +45,8 @@ def _run_scan_locked(scan_id: int) -> None:
         zap = get_zap()
         zap.core.new_session(name=f"sentinelscan-{scan_id}", overwrite=True)
         zap.spider.set_option_max_duration(settings.spider_max_duration_mins)
+        zap.ajaxSpider.set_option_browser_id(settings.ajax_spider_browser)
+        zap.ajaxSpider.set_option_max_duration(settings.ajax_spider_max_duration_mins)
         zap.ascan.set_option_max_scan_duration_in_mins(settings.ascan_max_duration_mins)
 
         zap.urlopen(target)
@@ -54,13 +56,17 @@ def _run_scan_locked(scan_id: int) -> None:
         spider_id = zap.spider.scan(target)
         scan.zap_spider_scan_id = str(spider_id)
         db.commit()
-        _poll(db, scan, lambda: zap.spider.status(spider_id), start=0, span=40)
+        _poll(db, scan, lambda: zap.spider.status(spider_id), start=0, span=20)
 
-        _update(db, scan, status=ScanStatus.ACTIVE_SCANNING, progress=40)
+        # The traditional spider cannot execute JavaScript, so single-page apps
+        # expose almost no attack surface without a browser-driven crawl.
+        _run_ajax_spider(db, scan, zap, target)
+
+        _update(db, scan, status=ScanStatus.ACTIVE_SCANNING, progress=45)
         ascan_id = zap.ascan.scan(target)
         scan.zap_ascan_scan_id = str(ascan_id)
         db.commit()
-        _poll(db, scan, lambda: zap.ascan.status(ascan_id), start=40, span=59)
+        _poll(db, scan, lambda: zap.ascan.status(ascan_id), start=45, span=54)
 
         alerts = zap.core.alerts(baseurl=target)
         db.add_all([_to_finding(scan_id, alert) for alert in alerts])
@@ -76,6 +82,22 @@ def _run_scan_locked(scan_id: int) -> None:
         _mark_failed(db, scan_id, str(exc))
     finally:
         db.close()
+
+
+def _run_ajax_spider(db, scan: Scan, zap, target: str) -> None:
+    """Browser-driven crawl. Non-fatal: a missing browser shouldn't abort the scan."""
+    deadline = time.time() + (settings.ajax_spider_max_duration_mins + 1) * 60
+    try:
+        zap.ajaxSpider.scan(target)
+        while zap.ajaxSpider.status == "running":
+            if time.time() > deadline:
+                zap.ajaxSpider.stop()
+                break
+            scan.progress_percent = min(44, scan.progress_percent + 1)
+            db.commit()
+            time.sleep(POLL_INTERVAL_SECONDS)
+    except Exception:
+        logger.warning("AJAX spider unavailable for scan %s; continuing", scan.id, exc_info=True)
 
 
 def _poll(db, scan: Scan, status_fn, start: int, span: int) -> None:

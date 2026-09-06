@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db import models  # noqa: F401  (registers models on Base.metadata)
 from app.db.database import Base, engine
-from app.routers import findings, health, scans
+from app.routers import findings, health, reports, scans
 
 app = FastAPI(title="SentinelScan API")
 
@@ -24,3 +24,4 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(scans.router)
 app.include_router(findings.router)
+app.include_router(reports.router)

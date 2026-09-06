@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SentinelScan Report — {{ scan.target_url }}</title>
+<style>
+  :root {
+    --bg: #f8fafc; --card: #ffffff; --ink: #0f172a; --muted: #64748b;
+    --line: #e2e8f0; --accent: #0f766e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 20px; background: var(--bg); color: var(--ink);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; }
+  header { border-bottom: 3px solid var(--accent); padding-bottom: 20px; margin-bottom: 28px; }
+  h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); font-size: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 22px; margin-bottom: 22px; }
+  h2 { font-size: 18px; margin: 0 0 14px; letter-spacing: -0.01em; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .num { text-align: center; width: 130px; }
+  .totals td { font-weight: 700; border-bottom: none; }
+  .meta td:first-child { color: var(--muted); width: 170px; }
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 999px; color: #fff;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .issue { border-top: 1px solid var(--line); padding: 18px 0; }
+  .issue:first-of-type { border-top: none; padding-top: 4px; }
+  .issue h3 { margin: 0 0 6px; font-size: 16px; }
+  .issue-meta { color: var(--muted); font-size: 12.5px; margin-bottom: 10px; }
+  .label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 12px 0 4px; }
+  .curated { color: var(--accent); text-transform: none; letter-spacing: 0; font-weight: 600; }
+  ul.locations { margin: 4px 0 0; padding-left: 18px; }
+  ul.locations li { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; color: #334155; word-break: break-all; }
+  footer { color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 16px; }
+  a { color: var(--accent); }
+  @media print { body { background: #fff; padding: 0; } .card { border: none; padding: 0 0 18px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>SentinelScan Security Report</h1>
+    <div class="sub">{{ scan.target_url }} &middot; generated {{ generated_at }}</div>
+  </header>
+
+  <section class="card">
+    <h2>Scan details</h2>
+    <table class="meta">
+      <tr><td>Scan ID</td><td>{{ scan.id }}</td></tr>
+      <tr><td>Target</td><td>{{ scan.target_url }}</td></tr>
+      <tr><td>Status</td><td>{{ scan.status }}</td></tr>
+      <tr><td>Authorization</td><td>{{ scan.authorized_by }}</td></tr>
+      <tr><td>Started</td><td>{{ scan.started_at }}</td></tr>
+      <tr><td>Completed</td><td>{{ scan.completed_at }}</td></tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Findings summary</h2>
+    <table>
+      <tr><th>Severity</th><th class="num">Issues</th><th class="num">Affected locations</th></tr>
+      {% for risk, color in risk_colors.items() %}
+      <tr>
+        <td><span class="badge" style="background: {{ color }}">{{ risk }}</span></td>
+        <td class="num">{{ issue_counts.get(risk, 0) }}</td>
+        <td class="num">{{ instance_counts.get(risk, 0) }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="totals"><td>Total</td><td class="num">{{ total_issues }}</td><td class="num">{{ total_instances }}</td></tr>
+    </table>
+  </section>
+
+  {% for section in sections %}
+  <section class="card">
+    <h2><span class="badge" style="background: {{ section.color }}">{{ section.risk }}</span>
+      &nbsp;{{ section.issue_count }} issue{{ '' if section.issue_count == 1 else 's' }}</h2>
+    {% for issue in section.issues %}
+    <div class="issue">
+      <h3>{{ issue.name }}</h3>
+      <div class="issue-meta">
+        Confidence: {{ issue.confidence }}
+        {%- if issue.cwe_id %} &middot; CWE-{{ issue.cwe_id }}{% endif %}
+        {%- if issue.plugin_id %} &middot; ZAP rule {{ issue.plugin_id }}{% endif %}
+        &middot; {{ issue.instances | length }} affected location{{ '' if issue.instances | length == 1 else 's' }}
+      </div>
+      {% if issue.description %}<div>{{ issue.description }}</div>{% endif %}
+
+      <div class="label">Remediation{% if issue.remediation_is_curated %} <span class="curated">· SentinelScan guidance</span>{% endif %}</div>
+      <div>{{ issue.remediation }}</div>
+
+      {% if issue.instances %}
+      <div class="label">Affected locations</div>
+      <ul class="locations">
+        {% for instance in issue.instances[:10] %}
+        <li>{{ instance.url }}{% if instance.param %} <em>(parameter: {{ instance.param }})</em>{% endif %}</li>
+        {% endfor %}
+        {% if issue.instances | length > 10 %}
+        <li style="font-family: inherit; color: #64748b;">…and {{ issue.instances | length - 10 }} more</li>
+        {% endif %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </section>
+  {% else %}
+  <section class="card"><h2>Findings</h2><p>No findings were reported for this scan.</p></section>
+  {% endfor %}
+
+  <footer>
+    Generated by SentinelScan. Scanning was performed against a target the operator confirmed authorization to test.
+    Automated scanning surfaces candidate issues and does not replace manual verification — confirm each finding
+    before acting on it.
+  </footer>
+</div>
+</body>
+</html>
