@@ -1,0 +1,18 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-risk-high: #dc2626;
+  --color-risk-medium: #ea580c;
+  --color-risk-low: #ca8a04;
+  --color-risk-info: #64748b;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100 antialiased;
+}
