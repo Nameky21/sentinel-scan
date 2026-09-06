@@ -86,14 +86,19 @@ def _run_scan_locked(scan_id: int) -> None:
 
 def _run_ajax_spider(db, scan: Scan, zap, target: str) -> None:
     """Browser-driven crawl. Non-fatal: a missing browser shouldn't abort the scan."""
-    deadline = time.time() + (settings.ajax_spider_max_duration_mins + 1) * 60
+    # The AJAX spider reports no percentage, only running/stopped, so progress is
+    # estimated from elapsed time against its configured ceiling.
+    started = time.time()
+    budget = settings.ajax_spider_max_duration_mins * 60
+    deadline = started + budget + 60
     try:
         zap.ajaxSpider.scan(target)
         while zap.ajaxSpider.status == "running":
             if time.time() > deadline:
                 zap.ajaxSpider.stop()
                 break
-            scan.progress_percent = min(44, scan.progress_percent + 1)
+            elapsed_fraction = min(1.0, (time.time() - started) / budget)
+            scan.progress_percent = 20 + int(24 * elapsed_fraction)
             db.commit()
             time.sleep(POLL_INTERVAL_SECONDS)
     except Exception:

@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2 import Environment, FileSystemLoader
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT
 from reportlab.lib.pagesizes import LETTER
@@ -93,7 +93,9 @@ def build_report_context(scan: Scan, findings: list[Finding]) -> dict:
 
 
 def render_html(context: dict) -> str:
-    env = Environment(loader=FileSystemLoader(TEMPLATES_DIR), autoescape=select_autoescape(["html"]))
+    # Findings carry attacker-influenced strings (evidence, URLs, injected
+    # payloads), so escaping is unconditional rather than extension-driven.
+    env = Environment(loader=FileSystemLoader(TEMPLATES_DIR), autoescape=True)
     return env.get_template("report.html.j2").render(**context)
 
 
