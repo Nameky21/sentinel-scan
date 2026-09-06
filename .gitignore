@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Backend runtime artifacts
+backend/*.db
+backend/reports_output/*
+!backend/reports_output/.gitkeep
+backend/.env
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.env
+
+# OS / editor
+.vscode/
+.DS_Store
+Thumbs.db
