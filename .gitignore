@@ -19,6 +19,9 @@ frontend/dist/
 frontend/.vite/
 frontend/.env
 
+# SentinelScan launcher state (PIDs, logs)
+scripts/.run/
+
 # OS / editor
 .vscode/
 .DS_Store

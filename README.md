@@ -92,6 +92,22 @@ scripts/start-zap.ps1             launches the ZAP daemon correctly
 
 ## Running it
 
+### One-click start (Windows)
+
+Run once, to create Desktop shortcuts:
+
+```powershell
+.\scripts\install-shortcuts.ps1
+```
+
+Then double-click **Start SentinelScan** (or right-click it on the Desktop → *Pin to taskbar* for one-click access anywhere). It starts ZAP, the backend, and the frontend — all hidden, with output going to `scripts\.run\logs\` — waits until the backend actually confirms it is connected to ZAP (via `/api/zap/status`, not just ZAP's own readiness), then opens `http://localhost:5173`. The launcher window itself stays open with short progress messages, and stays open with an error and a log-file pointer if anything fails. Double-click **Stop SentinelScan** to shut everything down again.
+
+The launcher assumes the one-time setup below has already been done (venv + dependencies, `.env` files, `npm install`); it checks for those and tells you what is missing rather than installing anything itself.
+
+### Or run it manually
+
+For visible per-service output and more control, run the three services yourself:
+
 **1. Start the ZAP daemon.**
 
 ```powershell
