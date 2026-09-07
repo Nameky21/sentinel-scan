@@ -17,7 +17,8 @@
   .\scripts\start-all.ps1
 #>
 param(
-  [switch]$SkipBrowser
+  [switch]$SkipBrowser,
+  [switch]$Quiet
 )
 
 $ErrorActionPreference = "Stop"
@@ -63,8 +64,10 @@ function Fail {
   Write-Host ""
   Write-Host "FAILED: $Message" -ForegroundColor Red
   # Keep a double-clicked shortcut's window open long enough to read the error,
-  # but don't break non-interactive runs where Read-Host throws.
-  if ([Environment]::UserInteractive) {
+  # but don't break non-interactive runs where Read-Host throws, and don't
+  # block when invoked quietly from the GUI (nobody can see the window to
+  # press Enter on it).
+  if (-not $Quiet -and [Environment]::UserInteractive) {
     try { Read-Host "Press Enter to close" } catch { Start-Sleep -Seconds 20 }
   }
   exit 1

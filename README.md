@@ -94,13 +94,24 @@ scripts/start-zap.ps1             launches the ZAP daemon correctly
 
 ### One-click start (Windows)
 
-Run once, to create Desktop shortcuts:
+Run once, to create a single Desktop shortcut:
 
 ```powershell
 .\scripts\install-shortcuts.ps1
 ```
 
-Then double-click **Start SentinelScan** (or right-click it on the Desktop → *Pin to taskbar* for one-click access anywhere). It starts ZAP, the backend, and the frontend — all hidden, with output going to `scripts\.run\logs\` — waits until the backend actually confirms it is connected to ZAP (via `/api/zap/status`, not just ZAP's own readiness), then opens `http://localhost:5173`. The launcher window itself stays open with short progress messages, and stays open with an error and a log-file pointer if anything fails. Double-click **Stop SentinelScan** to shut everything down again.
+(Re-running this after upgrading from an older version of SentinelScan also removes the old **Start SentinelScan** / **Stop SentinelScan** shortcut pair it used to create.)
+
+Then double-click **SentinelScan** on the Desktop (or right-click it → *Pin to taskbar* for one-click access anywhere). It opens a small control-panel window with a single button:
+
+- Click **Start SentinelScan** to start ZAP, the backend, and the frontend — all hidden, with output going to `scripts\.run\logs\` — and wait until the backend actually confirms it is connected to ZAP (via `/api/zap/status`, not just ZAP's own readiness). The button shows **Starting…** while this happens (up to ~3 minutes on a cold start, mostly ZAP's JVM warm-up); once everything is up, `http://localhost:5173` opens in your browser and the window switches to showing **Stop SentinelScan**.
+- Click **Stop SentinelScan** to shut everything down again; the window switches back to **Start SentinelScan** once all three services have exited.
+
+If the control panel is opened while SentinelScan is already running (e.g. left running from a previous session), it detects this and opens straight to the **Stop SentinelScan** state instead of assuming everything is stopped.
+
+Closing the control-panel window does **not** stop SentinelScan — it's just a UI for the start/stop scripts, not the services themselves. Use the **Stop SentinelScan** button (or `.\scripts\stop-all.ps1`) to actually shut things down.
+
+If something fails to start or stop, the window shows a short error pointing at the relevant log file under `scripts\.run\logs\`.
 
 The launcher assumes the one-time setup below has already been done (venv + dependencies, `.env` files, `npm install`); it checks for those and tells you what is missing rather than installing anything itself.
 
