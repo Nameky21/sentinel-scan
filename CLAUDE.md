@@ -10,6 +10,16 @@ It is also a resume/portfolio project, so commit history, README quality, and do
 
 ## Running things
 
+**Fastest path: `.\scripts\start-all.ps1`.** Starts ZAP, backend, and frontend together (each hidden, logs under `scripts/.run/logs/`), polls `/api/zap/status` until the *backend* confirms it's actually connected to ZAP (not just that ZAP itself is up), then opens the browser. `.\scripts\stop-all.ps1` tears it all down (tree-kills each service so no orphaned child processes are left on the ports). Both are idempotent — safe to re-run if some pieces are already up; they skip anything already listening on its port. `.\scripts\install-shortcuts.ps1` (one-time) creates Desktop shortcuts for both. Prefer this over the manual steps below unless you specifically need to watch live output from one service.
+
+### PowerShell gotchas on this machine (learned the hard way — don't relearn them)
+
+- **`Start-Job` does not survive between separate tool calls.** Each PowerShell/Bash tool invocation is effectively a fresh process; shell state (jobs, variables) doesn't persist across calls. Anything that must outlive the current command (a dev server, a long scan) needs `Start-Process` (a real detached OS process), never `Start-Job`.
+- **`Start-Process -Wait` blocks on the whole process tree, not just the direct child.** `scripts/start-zap.ps1` intentionally leaves the ZAP `java.exe` daemon running after it exits — waiting on it with `-Wait` hangs forever. Use `$proc = Start-Process -PassThru; $proc.WaitForExit()` instead.
+- **`Start-Process -PassThru` without `-Wait` never populates `.ExitCode`** — it's always `$null`. Judge success by an actual side effect (e.g. the expected port is now listening), not the exit code.
+- **`uvicorn --reload` and `npm run dev` (vite) each spawn child processes.** Killing only the top-level PID leaves the real listener orphaned on its port. Use `taskkill /F /T /PID <pid>` (tree-kill), not `Stop-Process`.
+- **Vite's dev server can end up bound only to IPv6 (`[::1]:5173`), not `127.0.0.1`.** If `http://127.0.0.1:5173` won't connect but Vite reports it's running, try `http://localhost:5173` instead (or check with `netstat -ano | findstr :5173`).
+
 Python on this machine: bare `python`/`python3` hit the Windows Store alias stub and fail. Use `py -3` to create the venv, and `backend/.venv/Scripts/python.exe` to run anything inside it.
 
 **ZAP daemon must be running before any scan works.** The backend connects to it; `GET /api/zap/status` reports reachability.
@@ -78,6 +88,8 @@ Two rendering constraints:
 - ReportLab `Paragraph` parses a mini-HTML dialect, so all text passed to it goes through `_esc()`.
 
 Reports are written to `backend/reports_output/` (gitignored) and served with an inline content disposition so opening one displays it rather than downloading.
+
+Deleting a scan (`DELETE /api/scans/{id}`, or the bulk `DELETE /api/scans`) must remove its report files from disk explicitly — SQLAlchemy's `cascade="all, delete-orphan"` on `Scan.reports`/`Scan.findings` only cleans up DB rows, not the physical files (see `_delete_scan_and_files` in `scans.py`). Both delete endpoints refuse (409) to delete a scan whose status is `pending`/`spidering`/`active_scanning`, since the orchestrator's background task still holds a live reference to it for the scan's duration; the bulk endpoint instead skips such scans and reports how many it deleted vs. skipped.
 
 ### Authorization gate
 
