@@ -46,3 +46,8 @@ class ScanStatusResponse(BaseModel):
     status: ScanStatus
     progress_percent: int
     error_message: str | None
+
+
+class ScanDeleteAllResponse(BaseModel):
+    deleted_count: int
+    skipped_count: int

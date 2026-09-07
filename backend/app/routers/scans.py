@@ -1,13 +1,23 @@
+from pathlib import Path
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.db.models import Finding, Scan, ScanStatus
-from app.schemas.scan import ScanCreateRequest, ScanResponse, ScanStatusResponse, ScanSummary
+from app.schemas.scan import (
+    ScanCreateRequest,
+    ScanDeleteAllResponse,
+    ScanResponse,
+    ScanStatusResponse,
+    ScanSummary,
+)
 from app.services import scan_orchestrator
 
 router = APIRouter(prefix="/api/scans", tags=["scans"])
+
+_RUNNING_STATUSES = {ScanStatus.PENDING, ScanStatus.SPIDERING, ScanStatus.ACTIVE_SCANNING}
 
 
 @router.post("", response_model=ScanResponse, status_code=201)
@@ -77,8 +87,33 @@ def get_scan_status(scan_id: int, db: Session = Depends(get_db)):
 @router.delete("/{scan_id}", status_code=204)
 def delete_scan(scan_id: int, db: Session = Depends(get_db)):
     scan = _get_scan_or_404(db, scan_id)
-    db.delete(scan)
+    if scan.status in _RUNNING_STATUSES:
+        raise HTTPException(status_code=409, detail="Cannot delete a scan that is currently running.")
+    _delete_scan_and_files(db, scan)
     db.commit()
+
+
+@router.delete("", response_model=ScanDeleteAllResponse)
+def delete_all_scans(db: Session = Depends(get_db)):
+    scans = db.scalars(select(Scan)).all()
+    deleted = skipped = 0
+    for scan in scans:
+        if scan.status in _RUNNING_STATUSES:
+            skipped += 1
+            continue
+        _delete_scan_and_files(db, scan)
+        deleted += 1
+    db.commit()
+    return ScanDeleteAllResponse(deleted_count=deleted, skipped_count=skipped)
+
+
+def _delete_scan_and_files(db: Session, scan: Scan) -> None:
+    for report in scan.reports:
+        try:
+            Path(report.file_path).unlink()
+        except FileNotFoundError:
+            pass
+    db.delete(scan)
 
 
 def _get_scan_or_404(db: Session, scan_id: int) -> Scan:

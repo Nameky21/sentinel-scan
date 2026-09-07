@@ -1,4 +1,5 @@
 import type {
+  DeleteAllScansResponse,
   Finding,
   Report,
   ReportFormat,
@@ -32,6 +33,8 @@ export const api = {
   getScanStatus: (id: number) => request<ScanStatusResponse>(`/api/scans/${id}/status`),
 
   deleteScan: (id: number) => request<void>(`/api/scans/${id}`, { method: 'DELETE' }),
+
+  deleteAllScans: () => request<DeleteAllScansResponse>('/api/scans', { method: 'DELETE' }),
 
   startScan: (body: { target_url: string; authorization_confirmed: boolean; authorized_by?: string }) =>
     request<Scan>('/api/scans', { method: 'POST', body: JSON.stringify(body) }),

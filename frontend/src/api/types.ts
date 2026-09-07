@@ -31,6 +31,13 @@ export interface ScanStatusResponse {
   error_message: string | null
 }
 
+export interface DeleteAllScansResponse {
+  deleted_count: number
+  skipped_count: number
+}
+
+export const RUNNING_STATUSES: ScanStatus[] = ['pending', 'spidering', 'active_scanning']
+
 export interface Finding {
   id: number
   scan_id: number
